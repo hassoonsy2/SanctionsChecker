@@ -1,7 +1,9 @@
 # SanctionsChecker
 
 [sanctionschecker.azurewebsites.net](sanctionschecker.azurewebsites.net)
-![Image]([https://github.com/hassoonsy2/Robotics_Project/blob/main/R%20(1).jpg](https://github.com/hassoonsy2/SanctionsChecker/blob/main/example%20.png))
+
+
+![Image](https://github.com/hassoonsy2/SanctionsChecker/blob/main/example%20.png)
 
 
 ## Overview
