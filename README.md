@@ -1,6 +1,7 @@
 # SanctionsChecker
 
-sanctionschecker.azurewebsites.net 
+[a link](sanctionschecker.azurewebsites.net)
+
 
 ## Overview
 This application allows users to search for names within a sanctions list. It's built with Flask for the backend and Bootstrap for the frontend. The application uses fuzzy matching to find and score potential matches based on the input.
@@ -35,14 +36,13 @@ This application allows users to search for names within a sanctions list. It's 
   ## Usage
 
 1. Start the Flask app:
-  ```sh
-  flask run
-
-
-
+ ```sh
+     flask run
+```
 
 ## Configuration
 The application can be configured via environment variables. For local development, these can be set in a .env file in the root of the project directory.
+
 ## Deployment
 To deploy this application on Azure Web App, follow the provided CI/CD GitHub Actions workflow, which will automatically build and deploy your application to Azure.
 
