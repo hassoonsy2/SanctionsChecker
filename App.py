@@ -34,7 +34,9 @@ def find_matches(name, data_list, threshold):
 @app.route('/')
 def index():
     return render_template('search.html')
-
+@app.route('/health')
+def health_check():
+    return 'OK', 200
 @app.route('/search', methods=['POST'])
 def search():
     try:
