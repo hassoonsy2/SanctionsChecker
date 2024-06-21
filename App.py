@@ -3,7 +3,7 @@ import pandas as pd
 from fuzzywuzzy import fuzz, process
 import os
 import uuid
-import chardet
+
 
 
 app = Flask(__name__, template_folder='templates')
