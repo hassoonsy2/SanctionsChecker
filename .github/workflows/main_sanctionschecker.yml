@@ -16,14 +16,14 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'  # Match the Python version to your development environment
+          python-version: '3.9'  # Ensure this matches the Python version used locally
 
       - name: Install Python and PIP dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint with flake8  # Optional: Ensures your code base follows PEP8 standards
+      - name: Lint with flake8  # This step ensures code quality and adherence to PEP8 standards
         run: |
           pip install flake8
           flake8 --select=E9,F63,F7,F82 --show-source --statistics
@@ -57,6 +57,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'Sanctionschecker'
-          slot-name: 'production'  # Ensure the slot name is set correctly if using slots
+          slot-name: 'production'  # Verify this matches your Azure Web App slot configuration
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_590546FBCC564A39BFFA4F4DB1AD41E1 }}
-
