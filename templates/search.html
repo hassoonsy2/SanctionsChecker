@@ -11,16 +11,24 @@
             color: blue;
             font-weight: bold;
         }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container mt-5">
         <h2 class="mb-4">Search Names in Sanctions List</h2>
-        <form id="searchForm" class="mb-3">
+        <form id="fileUploadForm" class="mb-3" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="names">Enter Names (comma-separated):</label>
-                <input type="text" class="form-control" name="names" id="names" required>
+                <label for="file">Upload Names File:</label>
+                <input type="file" class="form-control-file" name="file" id="file" required>
+                <button type="submit" class="btn btn-primary mt-2">Upload</button>
             </div>
+        </form>
+        <div id="columnSelector" class="form-group hidden">
+            <label for="nameColumn">Select Name Column:</label>
+            <select class="form-control" id="nameColumn"></select>
+        </div>
+        <form id="optionsForm" class="hidden">
             <div class="form-group">
                 <label for="type">Type:</label>
                 <select class="form-control" name="type" id="type">
@@ -32,44 +40,160 @@
                 <label for="threshold">Threshold (0-100):</label>
                 <input type="number" class="form-control" name="threshold" id="threshold" min="0" max="100" value="85" required>
             </div>
+            <button type="button" class="btn btn-secondary" id="matchButton">Match and Download Results</button>
+        </form>
+        <div id="results" class="row hidden">
+            <div class="col-12">
+                <p>Your file is being processed. <a href="#" id="downloadLink">Click here to download the results.</a></p>
+            </div>
+            <div id="loading" class="spinner-border text-primary" role="status" style="display: none;">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Search Names Form -->
+        <h3 class="mt-5">Or Search Names Directly</h3>
+        <form id="searchForm">
+            <div class="form-group">
+                <label for="names">Enter Names (comma-separated):</label>
+                <input type="text" class="form-control" id="names" required>
+            </div>
+            <div class="form-group">
+                <label for="searchType">Type:</label>
+                <select class="form-control" id="searchType">
+                    <option value="person">Person</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="searchThreshold">Threshold (0-100):</label>
+                <input type="number" class="form-control" id="searchThreshold" min="0" max="100" value="85" required>
+            </div>
             <button type="submit" class="btn btn-primary">Search</button>
         </form>
-        <div id="results" class="row"></div>
+        <div id="searchResults" class="row hidden">
+            <div class="col-12">
+                <h4>Search Results:</h4>
+                <div id="searchContent"></div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // Handle file upload form
+        $("#fileUploadForm").submit(function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                type: 'POST',
+                url: '/upload',
+                data: formData,
+                contentType: false,
+                processData: false,
+                beforeSend: function() {
+                    $('#loading').show();  // Show loading spinner before sending request
+                },
+                success: function(response) {
+                    var columns = response.columns;
+                    var columnSelector = $('#nameColumn');
+                    columnSelector.empty();
+                    columns.forEach(function(column) {
+                        columnSelector.append($('<option>', {
+                            value: column,
+                            text: column
+                        }));
+                    });
+                    $('#columnSelector').removeClass('hidden');
+                    $('#optionsForm').removeClass('hidden');
+                },
+                error: function() {
+                    alert('Failed to upload file. Please try again.');
+                },
+                complete: function() {
+                    $('#loading').hide();  // Hide loading spinner after request completes (success or error)
+                }
+            });
+        });
+
+        // Match and download results after selection
+        $("#matchButton").click(function() {
+            var nameColumn = $('#nameColumn').val();
+            var type = $('#type').val();
+            var threshold = $('#threshold').val();
+            $.ajax({
+                type: 'POST',
+                url: '/process',
+                data: JSON.stringify({ nameColumn: nameColumn, type: type, threshold: threshold }),
+                contentType: "application/json",
+                xhrFields: { responseType: 'blob' },
+                beforeSend: function() {
+                    $('#loading').show();  // Show loading spinner before sending request
+                },
+                success: function(response) {
+                    var downloadUrl = window.URL.createObjectURL(response);
+                    var a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'Matched_Results.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                },
+                error: function() {
+                    alert('There was an error processing your matches. Please try again.');
+                },
+                complete: function() {
+                    $('#loading').hide();  // Hide loading spinner after request completes (success or error)
+                }
+            });
+        });
+
+        // Handle direct name search
         $("#searchForm").submit(function(event) {
             event.preventDefault();
+            var names = $('#names').val().split(',');
+            var type = $('#searchType').val();
+            var threshold = $('#searchThreshold').val();
             $.ajax({
                 type: 'POST',
                 url: '/search',
-                data: $(this).serialize(),
+                data: JSON.stringify({names: names, type: type, threshold: threshold}),
+                contentType: 'application/json',
+                beforeSend: function() {
+                    $('#loading').show();  // Show loading spinner before sending request
+                },
                 success: function(data) {
-                    $("#results").empty();
-                    $.each(data, function(index, element) {
-                        // Sort the matches based on score, highest first
-                        var sortedMatches = element.matches.sort(function(a, b) { return b[1] - a[1]; });
-                        var cardsHtml = '';
-
-                        // Create a separate card for each match
-                        $.each(sortedMatches, function(i, match) {
-                            var matchClass = i === 0 ? 'closest-match' : ''; // Highlight the first match
-                            var cardHtml = '<div class="col-md-4 mb-3">' +
-                                           '<div class="card ' + matchClass + '">' +
-                                           '<div class="card-body">' +
-                                           '<h5 class="card-title">' + match[0] + '</h5>' +
-                                           '<p class="card-text">Score: ' + match[1] + '</p>' +
-                                           '</div></div></div>';
-                            cardsHtml += cardHtml;
+                    $('#searchResults').removeClass('hidden');
+                    var resultsDiv = $('#searchContent');
+                    resultsDiv.empty();  // Clear previous results
+                    if (data.length > 0) {
+                        data.forEach(function(result) {
+                            var nameHtml = '<h5>' + result.name + '</h5>';
+                            var cardsHtml = '';
+                            result.matches.forEach(function(match, index) {
+                                var matchClass = index === 0 ? 'closest-match' : '';
+                                var cardHtml = '<div class="card ' + matchClass + ' mb-3">' +
+                                               '<div class="card-body">' +
+                                               '<p class="card-text">Matched With: ' + match[0] + ' (Score: ' + match[1] + ')</p>' +
+                                               '</div></div>';
+                                cardsHtml += cardHtml;
+                            });
+                            var fullHtml = '<div class="col-md-12">' + nameHtml + cardsHtml + '</div>';
+                            resultsDiv.append(fullHtml);
                         });
-
-                        // Append the collection of cards to the results div
-                        $("#results").append(cardsHtml);
-                    });
+                    } else {
+                        resultsDiv.html('<div class="col-md-12"><p>No matches found.</p></div>');
+                    }
+                },
+                error: function() {
+                    alert('Error searching names. Please try again.');
+                },
+                complete: function() {
+                    $('#loading').hide();  // Hide loading spinner after request completes (success or error)
                 }
             });
         });
     </script>
+
     <!-- Optional: Include the Bootstrap JavaScript plugins bundle -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 </body>
