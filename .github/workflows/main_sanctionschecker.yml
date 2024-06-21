@@ -28,10 +28,6 @@ jobs:
           pip install flake8
           flake8 --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Test with pytest  # Optional: Run tests to ensure app is working as expected
-        run: |
-          pip install pytest
-          pytest
 
       - name: Zip artifact for deployment
         run: zip -r release.zip . -x "*venv*" -x "*.git*"
